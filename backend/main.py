@@ -1,0 +1,55 @@
+from fastapi import FastAPI,UploadFile,File,HTTPException
+from pydantic import BaseModel,Field
+import shutil # it is mainly use to copy remove 
+import os # its an operating system use to do various work
+from rag_engine import document_loader,ingest_document,llm_call
+from fastapi.middleware.cors import CORSMiddleware
+app=FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5174"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+upload_doc="uploads"
+os.makedirs(upload_doc,exist_ok=True)
+vector_store=None
+class Question(BaseModel):
+    question:str 
+from fastapi.middleware.cors import CORSMiddleware
+
+# ... after app = FastAPI() ...
+
+
+@app.get("/")
+def root():
+    return {"message":"RAG engine is running"}
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+@app.post("/upload")
+async def upload_file(file:UploadFile=File(...)):
+    global vector_store
+    file_path=os.path.join(upload_doc,file.filename)
+    with open(file_path,"wb") as f:   #we can use wb when the file has not only text but images etc as they need to b converted into binary
+        shutil.copyfileobj(file.file,f)
+    try:
+       document=document_loader(file_path)
+       vector_store= ingest_document(document)    
+       return {"message":f"file {file.filename} is uploaded and vectorized"}
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=str(e))
+    
+@app.post("/ask")
+async def ask_question(request:Question):
+    print("sm")
+    global vector_store
+    if vector_store is None:
+       print("cool")
+       raise HTTPException(status_code=400,detail="Please Upload a Document first.")
+    result=llm_call(vector_store,request.question) 
+    return result   
