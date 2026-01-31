@@ -5,13 +5,22 @@ import os # its an operating system use to do various work
 from rag_engine import document_loader,ingest_document,llm_call
 from fastapi.middleware.cors import CORSMiddleware
 app=FastAPI()
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5174"], 
-    allow_credentials=True,
+    allow_origins=[
+        "https://rag-application-qezzg6zx-anshs-projects-58d12fe9.vercel.app",
+        "https://nontelic-aleen-endoskeletal.ngrok-free.dev",
+    ],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 upload_doc="uploads"
 os.makedirs(upload_doc,exist_ok=True)
 vector_store=None
