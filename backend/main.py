@@ -12,11 +12,8 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://rag-application-qezzg6zx-anshs-projects-58d12fe9.vercel.app",
-        "https://nontelic-aleen-endoskeletal.ngrok-free.dev",
-    ],
-    allow_credentials=False,
+    allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
