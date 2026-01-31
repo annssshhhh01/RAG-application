@@ -8,7 +8,7 @@ function App(){
   const[messages,setMessages]=useState([])
   const[file,setFile]=useState(null)
 
- 
+ const API_URL = import.meta.env.VITE_API_URL;
  //for uploading the file and sending it to user
   async function uploadDocument(){
     if(!file)
@@ -17,7 +17,7 @@ function App(){
    const filedata=new FormData();
     filedata.append("file",file)    // formData is a class use to store complex data like file images and so in formData syntax is formData.append(name,value)
 
-    await fetch("http://127.0.0.1:8000/upload",{
+    await fetch(`${API_URL}/upload`,{
       method:"POST",
       body:filedata,
     })
@@ -32,7 +32,7 @@ function App(){
 setLoading(true)
 setMessages((prev)=>[...prev,{role:"user",text:question}]) // we can write setMessages(...Messages,{role:"user":text:question}) as well
 
-const res= await fetch("http://127.0.0.1:8000/ask",{
+const res= await fetch(`${API_URL}/ask`,{
   method:"POST",
   headers:{
     "Content-Type":"application/json",
