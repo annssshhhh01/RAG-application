@@ -8,7 +8,7 @@ function App(){
   const[messages,setMessages]=useState([])
   const[file,setFile]=useState(null)
 
- const API_URL = import.meta.env.VITE_API_URL;
+ const API_URL = import.meta.env.VITE_API_URL || "https://nontelic-aleen-endoskeletal.ngrok-free.dev";
  //for uploading the file and sending it to user
   async function uploadDocument(){
     if(!file)
