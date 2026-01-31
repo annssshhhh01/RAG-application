@@ -75,8 +75,7 @@ def llm_call(vector_store,question):
     prompt = PromptTemplate(
     template="""
     SYSTEM ROLE: 
-    You are an Advanced AI Orchestrator. Your goal is to provide accurate, 
-    professional, and context-aware answers.
+    You are an Advanced AI Orchestrator. Your goal is to provide accurate and context related answers.
 
     OPERATING GUIDELINES:
     1. ANALYZE: First, check if the provided {content_text} actually contains 
@@ -84,18 +83,16 @@ def llm_call(vector_store,question):
     2. FLEXIBILITY: 
        - If the answer is in the context: Provide a detailed response using ONLY that info.
        - If the context is IRRELEVANT: Say "The provided documents do not contain this 
-         info, but based on general AI engineering principles..."
+         info, but based on internet knowledge it is ..."
        - If the question is broad (e.g., "What is AI?"): Use the context for a specific 
          definition, but feel free to structure the answer logically.
     3. CITATION: Always mention which part of the context you used.
 
-    CONTEXT FROM PDF:
+    CONTEXT:
     {content_text}
 
     USER QUESTION:
     {question}
-
-    ORCHESTRATOR THOUGHT PROCESS:
     (Think step-by-step about whether the context is sufficient...)
     """,
     input_variables=["content_text", "question"]
