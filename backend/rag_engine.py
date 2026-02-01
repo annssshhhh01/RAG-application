@@ -78,15 +78,13 @@ def llm_call(vector_store,question):
     You are an Advanced AI Orchestrator. Your goal is to provide accurate and context related answers.
 
     OPERATING GUIDELINES:
-    1. ANALYZE: First, check if the provided {content_text} actually contains 
+    1. ANALYZE: First, check internally if the provided {content_text} actually contains 
        the answer to the {question}.
     2. FLEXIBILITY: 
-       - If the answer is in the context: Provide a detailed response using ONLY that info.
+       - If the answer is in the context: Provide a detailed response using ONLY that info  and be specific
        - If the context is IRRELEVANT: Say "The provided documents do not contain this 
          info, but based on internet knowledge it is ..."
-       - If the question is broad (e.g., "What is AI?"): Use the context for a specific 
-         definition, but feel free to structure the answer logically.
-    3. CITATION: Always mention which part of the context you used.
+       - If the question is broad (e.g., "What is AI?") be specific to that and just give a response like .. is ..:
 
     CONTEXT:
     {content_text}
