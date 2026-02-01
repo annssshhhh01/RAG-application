@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState ,useRef, useEffect } from "react";
+
 
 
 function App(){
@@ -7,8 +8,26 @@ function App(){
   const[loading,setLoading]=useState(false)
   const[messages,setMessages]=useState([])
   const[file,setFile]=useState(null)
+  const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
- const API_URL = import.meta.env.VITE_API_URL || "https://nontelic-aleen-endoskeletal.ngrok-free.dev";
+   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+    const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleKeyPress = (e) => {
+  if (e.key === "Enter" && !e.shiftKey && !loading) {
+    e.preventDefault();
+    sendMessage();
+  }
+};
+
+useEffect(() => {
+  scrollToBottom();
+}, [messages]);
+
  //for uploading the file and sending it to user
   async function uploadDocument(){
     if(!file)
@@ -51,76 +70,171 @@ setQuestion("")
 
 
 return (
-  <div className="min-h-screen bg-gray-900 text-white p-8 flex flex-col items-center">
-    <div className="w-full max-w-2xl bg-gray-800 rounded-xl shadow-2xl border border-gray-700 p-6">
-      <h2 className="text-2xl font-bold text-blue-400 mb-6 border-b border-gray-700 pb-4">
-        RAG APPLICATION
-      </h2>
-
-      {/* UPLOAD SECTION */}
-      <div className="flex items-center gap-4 mb-8 bg-gray-700/50 p-4 rounded-lg">
-        <input
-          type="file"
-          className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
-          onChange={(e) => setFile(e.target.files[0])}
-        />
-        <button 
-          onClick={uploadDocument} 
-          disabled={loading} 
-          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-all"
-        >
-          {loading ? "..." : "Upload"}
-        </button>
+  <>
+    <style>{`
+      @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-20px); }
+      }
+    `}</style>
+    
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 relative overflow-hidden">
+      
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      {/* CHAT AREA */}
-      <div className="h-96 overflow-y-auto mb-6 p-4 bg-gray-900 rounded-lg border border-gray-700 flex flex-col gap-4">
-        {messages.length === 0 && (
-          <p className="text-gray-500 text-center mt-36 italic">No conversation yet. Upload a file and start asking!</p>
-        )}
-        {messages.map((item, index) => (
+      {/* Floating Particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
           <div
-            key={index}
-            className={`flex ${item.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            <div className={`max-w-[80%] p-3 rounded-xl shadow-md ${
-              item.role === "user" 
-              ? "bg-blue-600 text-white rounded-tr-none" 
-              : "bg-gray-700 text-gray-200 rounded-tl-none"
-            }`}>
-              <span className="text-xs font-bold block mb-1 opacity-70">
-                {item.role === "user" ? "You" : "AI Assistant"}
-              </span>
-              {item.text}
-            </div>
-          </div>
+            key={i}
+            className="absolute w-1 h-1 bg-white/30 rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animation: `float ${5 + Math.random() * 10}s ease-in-out infinite`,
+              animationDelay: `${Math.random() * 5}s`,
+            }}
+          ></div>
         ))}
-        {loading && <div className="text-blue-400 animate-pulse text-sm">AI is thinking...</div>}
       </div>
 
-      {/* INPUT SECTION */}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
-          value={question}
-          placeholder="Ask a question about the document..."
-          onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-        />
-        <button 
-          onClick={sendMessage} 
-          disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-8 py-2 rounded-lg font-bold transition-all shadow-lg"
-        >
-          Ask
-        </button>
+      {/* Main Container - CHANGED: Made wider and taller */}
+      <div className="flex flex-col w-full h-screen">
+        
+        {/* Header */}
+        <div className="border-b border-zinc-800 px-8 py-4">
+  <h1 className="text-2xl font-semibold text-gray-100">
+    RAG Intelligence
+  </h1>
+  <p className="text-sm text-gray-400">
+    Upload documents and chat with AI
+  </p>
+</div>
+
+        {/* Upload Section */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 mb-4 shadow-2xl">
+          <div className="flex items-center gap-4">
+            <div className="flex-1 relative">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.txt"
+                onChange={(e) => setFile(e.target.files[0])}
+                className="w-full text-sm text-gray-300 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:bg-gradient-to-r file:from-purple-500 file:to-pink-500 file:text-white file:font-semibold file:cursor-pointer hover:file:from-purple-600 hover:file:to-pink-600 file:transition-all cursor-pointer bg-white/5 rounded-xl p-3 border border-white/10"
+              />
+              {file && (
+                <div className="mt-2 text-xs text-cyan-400">
+                  📄 {file.name}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={uploadDocument}
+              disabled={loading || !file}
+              className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading ? "⏳" : "Upload"}
+            </button>
+          </div>
+        </div>
+
+        {/* { Chat Container} */}
+<div className="flex-1 flex flex-col bg-zinc-900">
+          
+          {/* Messages Area - CHANGED: flex-1 to grow */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-4 animate-bounce">
+                  <span className="text-4xl">💬</span>
+                </div>
+                <p className="text-purple-300/60 text-lg">No messages yet</p>
+                <p className="text-purple-400/40 text-sm mt-2">Upload a document and start chatting!</p>
+              </div>
+            ) : (
+              messages.map((msg, index) => (
+                <div
+                  key={index}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[75%] rounded-2xl p-4 shadow-lg ${
+                      msg.role === "user"
+                        ? "bg-zinc-700 text-gray-100"
+                        : "bg-zinc-800 text-gray-200 border border-zinc-700"
+
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xl">
+                        {msg.role === "user" ? "👤" : "🤖"}
+                      </span>
+                      <span className="text-xs font-semibold opacity-70">
+                        {msg.role === "user" ? "You" : "AI Assistant"}
+                      </span>
+                    </div>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                  </div>
+                </div>
+              ))
+            )}
+            
+            {loading && (
+              <div className="flex justify-start">
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10 rounded-bl-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🤖</span>
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Area */}
+          <div className="border-t border-zinc-800 bg-zinc-900 px-6 py-4">
+  <div className="flex gap-3">
+    <input
+      type="text"
+      value={question}
+      onChange={(e) => setQuestion(e.target.value)}
+      onKeyPress={handleKeyPress}
+      placeholder="Ask anything about your document..."
+      disabled={loading}
+      className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-500"
+    />
+    <button
+      onClick={sendMessage}
+      disabled={loading || !question.trim()}
+      className="px-6 py-3 bg-zinc-700 hover:bg-zinc-600 text-gray-100 rounded-lg disabled:opacity-50"
+    >
+      Send
+    </button>
+  </div>
+</div>
+
+        </div>
+
+        {/* Footer */}
+        <div className="text-center mt-4 text-purple-300/40 text-xs">
+          Powered by AI • Your conversations are private
+        </div>
       </div>
     </div>
-  </div>
+  </>
 );
 }
-
 export default App;
 
 
