@@ -10,7 +10,7 @@ import os
 load_dotenv()
 llm = ChatGroq(
     model="llama-3.3-70b-versatile",  # or other Groq models like "mixtral-8x7b-32768"
-    temperature=0.7,
+    temperature=0.3,
     groq_api_key=os.getenv("GROQ_API_KEY")  # Optional: it will auto-load from env
 )
 embeddings=HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
@@ -43,7 +43,7 @@ def ingest_document(documents, is_audio=False):
     return vector_store
 
 def retrieve_content(vector_store,query):
-    retrieval_score=vector_store.similarity_search_with_score(query,k=10)
+    retrieval_score=vector_store.similarity_search_with_score(query,k=3)
     if not retrieval_score:
         return None, None
     
@@ -55,6 +55,7 @@ def retrieve_content(vector_store,query):
         extradata.append({
             "source":doc.metadata.get("source"),
             "chunk_id":doc.metadata.get("chunk_id"),
+            "timestamp": doc.metadata.get("timestamp"),
             "score":float(score)
         })   
 
@@ -71,29 +72,28 @@ def llm_call(vector_store,question):
         }
     prompt = PromptTemplate(
     template="""
-    system_prompt = (
-    "You are a helpful and direct AI Assistant. "
-    "Your primary goal is to provide specific answers based on the provided context. "
-    "\n\nSTRICT RULES:"
-    "\n1. NO META-TALK: Never start with 'According to the document,' 'The context says,' or 'Based on my analysis.' Just provide the answer."
-    "\n2. GREETINGS: If the user says 'hi', 'hello', or 'hey', respond with: 'Hello! I am your document assistant. How can I help you with the uploaded file today?'"
-    "\n3. NO BUZZWORDS: Avoid corporate jargon. Use simple, clear, and professional language."
-    "\n4. DIRECT ANSWERS: If the user asks a specific question (e.g., 'What is my roll number?'), reply with ONLY the answer (e.g., 'Your roll number is 13152490.')."
-    "\n5. FALLBACK: If the answer is absolutely not in the context, say: 'I couldn't find that specific information in the document. Could you try rephrasing or asking something else?'"
-)
+    You are a helpful and direct AI assistant.
+
+    STRICT RULES:
+    1. Answer ONLY using the given context.
+    2. Give clear and direct answers (no explanations unless asked).
+    3. Do NOT mention the word "context" or "document".
+    4. If the answer is not clearly present, say:
+    "I couldn't find that information in the provided data."
 
     CONTEXT:
     {content_text}
 
-    USER QUESTION:
+    QUESTION:
     {question}
-    (Think step-by-step about whether the context is sufficient...)
     """,
     input_variables=["content_text", "question"]
 )
     final_prompt=prompt.format(content_text=concatinated_content,question=question)
     result=llm.invoke(final_prompt)
+    top_timestamp = extradata[0].get("timestamp") if extradata else None
     return {
         "answer": result.content,
+        "timestamp": top_timestamp,
         "sources": extradata
     }
