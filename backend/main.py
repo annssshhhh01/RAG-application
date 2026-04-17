@@ -8,9 +8,9 @@ app=FastAPI()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import whisper
+import subprocess
 from langchain_core.documents import Document
-app = FastAPI()
-vector_store = None
+model = whisper.load_model("base")
 
 app.add_middleware(
     CORSMiddleware,
@@ -52,52 +52,51 @@ async def upload_file(file:UploadFile=File(...)):
     except Exception as e:
         raise HTTPException(status_code=500,detail=str(e))
     
-@app.post("/ask")
-async def ask_question(request:Question):
-    print("sm")
-    global vector_store
-    if vector_store is None:
-       print("cool")
-       raise HTTPException(status_code=400,detail="Please Upload a Document first.")
-    result=llm_call(vector_store,request.question) 
-    return result   
+@app.post("/upload/media")
+async def upload_media(file: UploadFile = File(...)):
 
-
-model = whisper.load_model("base")  # load once (important)
-
-@app.post("/upload/audio")
-async def transcribe_audio(file: UploadFile = File(...)):
     file_path = f"uploads/{file.filename}"
 
     with open(file_path, "wb") as f:
         f.write(await file.read())
 
-    result = model.transcribe(file_path)
+    ext = file.filename.split(".")[-1].lower()
+
+    if ext in ["mp3", "wav", "m4a"]:
+        audio_path = file_path
+
+    elif ext in ["mp4", "mov", "mkv"]:
+        audio_path = file_path + ".mp3"
+
+        subprocess.run([
+            "ffmpeg",
+            "-y",
+            "-i", file_path,
+            "-q:a", "0",
+            "-map", "a",
+            audio_path
+        ])
+
+    else:
+        return {"error": "Unsupported file type"}
+
+    # 🎤 Whisper (uses global model)
+    result = model.transcribe(audio_path)
     segments = result["segments"]
 
-    # STEP 1: chunks
-    chunks = []
-    for s in segments:
-        chunks.append({
-            "text": s["text"],
-            "timestamp": s["start"]
-        })
-
-    # STEP 2: convert to docs
     docs = []
-
-    for c in chunks:
+    for s in segments:
         docs.append(
             Document(
-                page_content=c["text"],
+                page_content=s["text"],
                 metadata={
-                    "timestamp": c["timestamp"],
+                    "timestamp": s["start"],
                     "source": file.filename
                 }
             )
         )
 
-    # 🔥 THIS IS THE KEY LINE
     global vector_store
     vector_store = ingest_document(docs, is_audio=True)
-    return {"message": "Audio processed successfully"}
+
+    return {"message": "File processed successfully"}
