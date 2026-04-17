@@ -2,6 +2,8 @@ from fastapi import FastAPI,UploadFile,File,HTTPException
 from pydantic import BaseModel,Field
 import shutil # it is mainly use to copy remove 
 import os # its an operating system use to do various work
+from dotenv import load_dotenv
+load_dotenv()  # Load .env file before any os.getenv() calls
 from rag_engine import document_loader,ingest_document,llm_call,summarize_call
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
@@ -22,6 +24,19 @@ conn = psycopg2.connect(
 )
 
 cursor = conn.cursor()
+
+# ── Auto-create table if it doesn't exist ──────────────────────────────────
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS documents (
+        id        SERIAL PRIMARY KEY,
+        text      TEXT NOT NULL,
+        timestamp FLOAT,
+        source    TEXT,
+        type      TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+""")
+conn.commit()
 
 app.add_middleware(
     CORSMiddleware,
