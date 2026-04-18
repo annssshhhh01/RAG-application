@@ -17,8 +17,7 @@ export function getFileType(file) {
  * Returns { success, message }
  */
 export async function uploadFile(file, onProgress) {
-  const fileType = getFileType(file);
-  const endpoint = fileType === "pdf" ? "/upload" : "/upload/media";
+  const endpoint = "/upload";
 
   const formData = new FormData();
   formData.append("file", file);

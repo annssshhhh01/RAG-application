@@ -67,6 +67,10 @@ def health():
 
 @app.post("/upload")
 async def upload_file(file:UploadFile=File(...)):
+    ext = file.filename.split(".")[-1].lower()
+    if ext in ["mp3", "wav", "m4a", "mp4", "mov", "mkv"]:
+        return await upload_media(file)
+
     global vector_store
     file_path=os.path.join(upload_doc,file.filename)
     with open(file_path,"wb") as f:   #we can use wb when the file has not only text but images etc as they need to b converted into binary
@@ -160,6 +164,8 @@ async def upload_media(file: UploadFile = File(...)):
             print("[ERROR] FFmpeg conversion failed.")
             print(f"Stdout: {e.stdout}")
             print(f"Stderr: {e.stderr}")
+            if "does not contain any stream" in str(e.stderr).lower() or "no such file" in str(e.stderr).lower():
+                raise HTTPException(status_code=400, detail="The video file does not contain an audio stream to transcribe.")
             raise HTTPException(status_code=500, detail="FFmpeg conversion failed. Check server logs.")
             
         if not os.path.exists(audio_path):
