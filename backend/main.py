@@ -119,9 +119,16 @@ async def upload_media(file: UploadFile = File(...)):
     print(f"[DEBUG] File type detected as: {ext}")
     file_path = f"uploads/{file.filename}"
 
+    MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
     try:
+        content = await file.read()
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail="File too large (max 50MB)")
+            
         with open(file_path, "wb") as f:
-            f.write(await file.read())
+            f.write(content)
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"[ERROR] Failed to save file: {e}")
         raise HTTPException(status_code=500, detail="Failed to save uploaded file")
@@ -133,16 +140,22 @@ async def upload_media(file: UploadFile = File(...)):
         audio_path = file_path + ".mp3"
         print(f"[DEBUG] Starting FFmpeg conversion for video file: {file_path}")
         
+        if subprocess.run(["which", "ffmpeg"], capture_output=True).returncode != 0:
+            raise HTTPException(status_code=500, detail="FFmpeg not installed on server")
+            
         try:
             process = subprocess.run([
                 "ffmpeg",
                 "-y",
                 "-i", file_path,
-                "-q:a", "0",
-                "-map", "a",
+                "-vn",              # ignore video stream
+                "-acodec", "mp3",   # force mp3 codec
                 audio_path
-            ], capture_output=True, text=True, check=True)
+            ], capture_output=True, text=True, check=True, timeout=30)
             print("[DEBUG] FFmpeg conversion successful.")
+        except subprocess.TimeoutExpired:
+            print("[ERROR] FFmpeg conversion timed out after 30 seconds.")
+            raise HTTPException(status_code=500, detail="FFmpeg conversion timed out.")
         except subprocess.CalledProcessError as e:
             print("[ERROR] FFmpeg conversion failed.")
             print(f"Stdout: {e.stdout}")
@@ -206,7 +219,10 @@ async def upload_media(file: UploadFile = File(...)):
 
     global vector_store
     try:
-        vector_store = ingest_document(docs, is_audio=True)
+        if vector_store:
+            vector_store.add_documents(docs)
+        else:
+            vector_store = ingest_document(docs, is_audio=True)
         print(f"[DEBUG] Successfully ingested {successful_segments} segments into FAISS.")
     except Exception as e:
         print(f"[ERROR] FAISS ingestion failed: {e}")
